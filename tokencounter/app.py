@@ -9,10 +9,11 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Footer, Input, Label, Static
+from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static
 
 from textual_plotext import PlotextPlot
 
+from . import __version__
 from .cycle import (
     current_cycle,
     linear_regression,
@@ -319,6 +320,7 @@ class TokenCounterApp(App):
     """App principale: prompt per inserire il consumo (% o $) + grafico."""
 
     TITLE = "TokenCounter"
+    SUB_TITLE = f"v{__version__}"
 
     CSS = """
     Screen {
@@ -359,6 +361,7 @@ class TokenCounterApp(App):
         self._demo_timer = None
 
     def compose(self) -> ComposeResult:
+        yield Header()
         yield Static(id="status")
         yield PlotextPlot(id="plot")
         yield ValueInput(
@@ -504,17 +507,17 @@ class TokenCounterApp(App):
             ys = [e.value for e in entries]
             reg = linear_regression(xs, ys)
 
-            if self.store.chart_type == "bar":
-                plt.bar(xs, ys, color="cyan+", width=0.6, reset_ticks=False, label="consumo")
-            else:
-                plt.plot(xs, ys, marker="braille", color="cyan", label="consumo")
-                plt.scatter(xs, ys, marker="dot", color="cyan+")
-
             if reg is not None:
                 slope, intercept = reg
                 t0, t1 = xs[0], max(cycle_len, xs[-1])
                 trend_y = [slope * t0 + intercept, slope * t1 + intercept]
                 plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
+
+            if self.store.chart_type == "bar":
+                plt.bar(xs, ys, color="cyan+", width=0.6, reset_ticks=False, label="consumo")
+            else:
+                plt.plot(xs, ys, marker="braille", color="cyan", label="consumo")
+                plt.scatter(xs, ys, marker="dot", color="cyan+")
 
         tick_count = 6
         tick_x = [cycle_len * i / (tick_count - 1) for i in range(tick_count)]
