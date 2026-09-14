@@ -33,11 +33,30 @@ python3 -m pip install --user build
 python3 -m build
 ```
 
-Questo genera `dist/tokencounter-0.1.0-py3-none-any.whl`. Copia solo quel file sulla macchina di destinazione e installa con:
+Questo genera `dist/tokencounter-<versione>-py3-none-any.whl` (la versione è quella in `pyproject.toml`). Copia solo quel file sulla macchina di destinazione e installa con:
 
 ```bash
-pipx install tokencounter-0.1.0-py3-none-any.whl
+pipx install tokencounter-<versione>-py3-none-any.whl
 ```
+
+### Aggiornamento
+
+Se hai i sorgenti aggiornati (es. dopo `git pull`), dalla cartella `tokencounter/`:
+
+```bash
+cd tokencounter
+pipx install . --force
+```
+
+`--force` reinstalla sovrascrivendo la versione precedente. I dati salvati (vedi sotto) non vengono toccati.
+
+Per verificare la versione installata:
+
+```bash
+pipx list
+```
+
+oppure, a programma avviato, il numero versione è mostrato nel sottotitolo della finestra.
 
 ### Disinstallazione
 
@@ -77,17 +96,17 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 
 ### Tasti
 
-| Tasto | Azione |
-|---|---|
-| `Invio` (nel campo di input) | Aggiunge il valore digitato |
-| `q` | Esce dal programma (funziona anche mentre il campo di input è attivo) |
-| `Ctrl+R` | Apre la finestra per cambiare il giorno del mese in cui i token si resettano |
-| `Ctrl+X` | Azzera tutti i valori inseriti (richiede conferma) |
-| `T` | Alterna il grafico tra linee e barre |
-| `Ctrl+D` | Attiva/disattiva la modalita' demo |
-| `Ctrl+M` | Alterna tra modalita' % e modalita' $ |
-| `Ctrl+B` | Apre la finestra per cambiare il plafond in $ |
-| `Ctrl+L` | Apre la lista dei valori inseriti (modalita' corrente), per modificarli o eliminarli |
+| Tasto                          | Azione                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------ |
+| `Invio` (nel campo di input) | Aggiunge il valore digitato                                                          |
+| `q`                          | Esce dal programma (funziona anche mentre il campo di input è attivo)               |
+| `Ctrl+R`                     | Apre la finestra per cambiare il giorno del mese in cui i token si resettano         |
+| `Ctrl+X`                     | Azzera tutti i valori inseriti (richiede conferma)                                   |
+| `T`                          | Alterna il grafico tra linee e barre                                                 |
+| `Ctrl+D`                     | Attiva/disattiva la modalita' demo                                                   |
+| `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
+| `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
+| `Ctrl+L`                     | Apre la lista dei valori inseriti (modalita' corrente), per modificarli o eliminarli |
 
 ### Grafico a linee
 

@@ -1,3 +1,5 @@
+LICENSE
+README.md
 pyproject.toml
 tokencounter/__init__.py
 tokencounter/app.py
