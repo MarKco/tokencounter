@@ -1,0 +1,2 @@
+[console_scripts]
+tokencounter = tokencounter.app:main

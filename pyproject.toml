@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tokencounter"
+version = "0.1.0"
+description = "TUI a colori per tracciare il consumo percentuale di token nel tempo"
+requires-python = ">=3.9"
+dependencies = [
+    "textual>=0.60",
+    "textual-plotext>=0.2",
+]
+
+[project.scripts]
+tokencounter = "tokencounter.app:main"
+
+[tool.setuptools.packages.find]
+include = ["tokencounter*"]

@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: tokencounter
+Version: 0.1.0
+Summary: TUI a colori per tracciare il consumo percentuale di token nel tempo
+Requires-Python: >=3.9
+Requires-Dist: textual>=0.60
+Requires-Dist: textual-plotext>=0.2
