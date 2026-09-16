@@ -114,7 +114,8 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 - Linea ciano con punti = valori inseriti, interpolati
 - Linea gialla = retta di tendenza, calcolata per regressione lineare pesata sugli ultimi 14 giorni di valori inseriti: i punti più recenti pesano di più (si dimezzano ogni 7 giorni) e un valore anomalo isolato (es. inserito per errore) viene automaticamente scartato dal calcolo
 - Linea arancione = "budget ideale", cioè l'andamento lineare da 0 al "pieno" (100% oppure il plafond in $) dall'inizio alla fine del ciclo corrente, utile per capire a colpo d'occhio se si sta consumando più o meno del previsto
-- Linea verticale rossa = data di reset (fine del ciclo corrente)
+
+Il grafico mostra sempre e solo il ciclo corrente (dal giorno di reset a quello successivo): i valori inseriti nei cicli precedenti restano salvati ma non compaiono più una volta chiuso il ciclo. Cambiare il giorno di reset (`Ctrl+R`) non cancella né mescola dati: serve solo a spostare "dove sei" all'interno del mese.
 
 ### "Max oggi senza sforare"
 
@@ -124,7 +125,7 @@ Nella barra di stato viene mostrato il valore massimo che puoi inserire adesso s
 
 - Una barra ciano per ogni valore realmente inserito
 - Linea gialla di tendenza sovrapposta alle barre (stessa retta di regressione del grafico a linee)
-- Restano presenti la linea arancione di budget ideale e la linea verticale rossa di reset
+- Resta presente la linea arancione di budget ideale
 
 ### Cambiare il giorno di reset
 
