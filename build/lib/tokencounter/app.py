@@ -397,7 +397,7 @@ class TokenCounterApp(App):
 
     BINDINGS = [
         Binding("q", "quit", "Esci", priority=True),
-        Binding("ctrl+r", "set_reset_day", "Giorno reset", priority=True),
+        Binding("ctrl+r", "set_reset_day", "Modifica giorno di reset", priority=True),
         Binding("ctrl+x", "clear_data", "Azzera dati", priority=True),
         Binding("t", "toggle_chart", "Linea/barre", priority=True),
         Binding("ctrl+d", "toggle_demo", "Demo", priority=True),

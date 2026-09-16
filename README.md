@@ -100,7 +100,7 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | ------------------------------ | ------------------------------------------------------------------------------------ |
 | `Invio` (nel campo di input) | Aggiunge il valore digitato                                                          |
 | `q`                          | Esce dal programma (funziona anche mentre il campo di input è attivo)               |
-| `Ctrl+R`                     | Apre la finestra per cambiare il giorno del mese in cui i token si resettano         |
+| `Ctrl+R`                     | Modifica giorno di reset (giorno del mese in cui i token si resettano)               |
 | `Ctrl+X`                     | Azzera tutti i valori inseriti (richiede conferma)                                   |
 | `T`                          | Alterna il grafico tra linee e barre                                                 |
 | `Ctrl+D`                     | Attiva/disattiva la modalita' demo                                                   |
