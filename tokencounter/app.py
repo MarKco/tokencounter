@@ -525,6 +525,13 @@ class TokenCounterApp(App):
         self._draw_plot()
         self._update_status()
 
+    def _entries_in_cycle(self, start_dt: datetime, end_dt: datetime) -> list[Entry]:
+        """Voci della modalita' attiva che ricadono nel ciclo [start_dt, end_dt).
+        Lo storico completo resta salvato: e' solo il grafico/le statistiche a
+        limitarsi al ciclo corrente, cosi' cambiare il giorno di reset o lasciar
+        passare un reset non mescola dati di cicli diversi."""
+        return [e for e in self.store.entries if start_dt <= e.datetime < end_dt]
+
     def _draw_plot(self) -> None:
         plot_widget = self.query_one("#plot", PlotextPlot)
         plt = plot_widget.plt
@@ -548,9 +555,8 @@ class TokenCounterApp(App):
             color="orange",
             label="budget ideale",
         )
-        plt.vline(cycle_len, color="red+")
 
-        entries = self.store.entries
+        entries = self._entries_in_cycle(start_dt, end_dt)
         if entries:
             xs = [days_since_start(e.datetime) for e in entries]
             ys = [e.value for e in entries]
@@ -558,7 +564,7 @@ class TokenCounterApp(App):
 
             if reg is not None:
                 slope, intercept = reg
-                t0, t1 = xs[0], max(cycle_len, xs[-1])
+                t0, t1 = xs[0], cycle_len
                 trend_y = [slope * t0 + intercept, slope * t1 + intercept]
                 plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
 
@@ -581,9 +587,11 @@ class TokenCounterApp(App):
 
     def _update_status(self) -> None:
         cycle = current_cycle(self.store.reset_day)
+        start_dt = datetime.combine(cycle.start, datetime.min.time())
+        end_dt = datetime.combine(cycle.end, datetime.min.time())
         today = datetime.now().date()
         days_left = cycle.days_left(today)
-        entries = self.store.entries
+        entries = self._entries_in_cycle(start_dt, end_dt)
         target = self.store.target()
         unit = "$" if self.store.mode == "dollar" else "%"
 
@@ -599,7 +607,7 @@ class TokenCounterApp(App):
 
         last_value = fmt(entries[-1].value) if entries else "n/d"
 
-        cycle_end_ts = datetime.combine(cycle.end, datetime.min.time()).timestamp()
+        cycle_end_ts = end_dt.timestamp()
 
         warning = ""
         max_today_text = "n/d"
