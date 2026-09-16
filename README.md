@@ -107,11 +107,12 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
 | `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
 | `Ctrl+L`                     | Apre la lista dei valori inseriti (modalita' corrente), per modificarli o eliminarli |
+| `?`                          | Mostra come viene calcolata la retta di tendenza                                     |
 
 ### Grafico a linee
 
 - Linea ciano con punti = valori inseriti, interpolati
-- Linea gialla = retta di tendenza calcolata per regressione lineare sui valori inseriti
+- Linea gialla = retta di tendenza, calcolata per regressione lineare pesata sugli ultimi 14 giorni di valori inseriti: i punti più recenti pesano di più (si dimezzano ogni 7 giorni) e un valore anomalo isolato (es. inserito per errore) viene automaticamente scartato dal calcolo
 - Linea arancione = "budget ideale", cioè l'andamento lineare da 0 al "pieno" (100% oppure il plafond in $) dall'inizio alla fine del ciclo corrente, utile per capire a colpo d'occhio se si sta consumando più o meno del previsto
 - Linea verticale rossa = data di reset (fine del ciclo corrente)
 
