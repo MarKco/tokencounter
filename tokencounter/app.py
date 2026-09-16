@@ -259,6 +259,7 @@ class InfoScreen(ModalScreen[None]):
         background: $surface;
     }
     #dialog Label {
+        width: 100%;
         margin-bottom: 1;
     }
     """
