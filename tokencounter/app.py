@@ -15,11 +15,15 @@ from textual_plotext import PlotextPlot
 
 from . import __version__
 from .cycle import (
+    HALF_LIFE_DAYS,
+    WINDOW_DAYS,
     current_cycle,
-    linear_regression,
     max_value_to_stay_on_pace,
     projected_exhaustion,
+    trend_regression,
 )
+
+SECONDS_PER_DAY = 86400.0
 from .storage import DemoStore, Entry, Store
 
 _NUMBER_CHARS = set("0123456789.+-eE_")
@@ -235,6 +239,45 @@ class EditValueScreen(ModalScreen[float | None]):
         self.dismiss(None)
 
 
+class TrendInfoScreen(ModalScreen[None]):
+    """Modale informativa su come viene calcolata la retta di tendenza."""
+
+    DEFAULT_CSS = """
+    TrendInfoScreen {
+        align: center middle;
+    }
+    #dialog {
+        width: 64;
+        height: auto;
+        padding: 1 2;
+        border: thick $primary;
+        background: $surface;
+    }
+    #dialog Label {
+        margin-bottom: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label(
+                "[b]Come viene calcolata la tendenza (linea gialla)[/b]\n\n"
+                "Regressione lineare pesata sui valori inseriti, non una media "
+                f"grezza di tutto lo storico:\n\n"
+                f"- [b]finestra[/b]: usa solo gli ultimi {WINDOW_DAYS:.0f} giorni\n"
+                f"- [b]recenza[/b]: i punti piu' recenti pesano di piu', il peso "
+                f"si dimezza ogni {HALF_LIFE_DAYS:.0f} giorni\n"
+                "- [b]outlier[/b]: un valore anomalo isolato (es. inserito per "
+                "errore) viene automaticamente scartato dal calcolo\n\n"
+                "La stessa tendenza alimenta anche l'avviso di rischio "
+                "esaurimento e il \"max oggi senza sforare\" in barra di stato.\n\n"
+                "Esc per chiudere."
+            )
+
+    def key_escape(self) -> None:
+        self.dismiss(None)
+
+
 class EntriesScreen(ModalScreen[None]):
     """Modale con la lista dei valori inseriti nella modalita' corrente:
     permette di modificarli o eliminarli."""
@@ -350,6 +393,7 @@ class TokenCounterApp(App):
         Binding("ctrl+m", "toggle_mode", "Modalita' %/$", priority=True),
         Binding("ctrl+b", "set_plafond", "Plafond $", priority=True),
         Binding("ctrl+l", "show_entries", "Lista/modifica", priority=True),
+        Binding("question_mark", "show_trend_info", "Info tendenza", priority=True),
     ]
 
     def __init__(self) -> None:
@@ -399,6 +443,11 @@ class TokenCounterApp(App):
         if result is not None:
             self.store.set_reset_day(result)
             self.redraw()
+        self.query_one("#value_input", Input).focus()
+
+    @work
+    async def action_show_trend_info(self) -> None:
+        await self.push_screen_wait(TrendInfoScreen())
         self.query_one("#value_input", Input).focus()
 
     def action_toggle_chart(self) -> None:
@@ -505,7 +554,7 @@ class TokenCounterApp(App):
         if entries:
             xs = [days_since_start(e.datetime) for e in entries]
             ys = [e.value for e in entries]
-            reg = linear_regression(xs, ys)
+            reg = trend_regression(xs, ys, days_since_start(datetime.now()))
 
             if reg is not None:
                 slope, intercept = reg
@@ -558,8 +607,10 @@ class TokenCounterApp(App):
             xs_num = [e.datetime.timestamp() for e in entries]
             ys = [e.value for e in entries]
 
+            now_ts = datetime.now().timestamp()
+
             if len(entries) >= 2:
-                reg = linear_regression(xs_num, ys)
+                reg = trend_regression(xs_num, ys, now_ts, day_length=SECONDS_PER_DAY)
                 if reg is not None:
                     slope, intercept = reg
                     exhaustion_ts = projected_exhaustion(slope, intercept, target=target)
@@ -571,7 +622,7 @@ class TokenCounterApp(App):
                         )
 
             max_today = max_value_to_stay_on_pace(
-                xs_num, ys, datetime.now().timestamp(), cycle_end_ts, target=target
+                xs_num, ys, now_ts, cycle_end_ts, target=target, day_length=SECONDS_PER_DAY
             )
             if max_today is None:
                 max_today_text = "n/d"
