@@ -167,6 +167,56 @@ def trend_regression(
     return weighted_linear_regression(fxs, fys, weights)
 
 
+# Moltiplicatore ~90% (approssimazione normale) per l'ampiezza dell'intervallo
+# di confidenza attorno alla previsione a fine ciclo.
+CONFIDENCE_Z = 1.645
+
+
+def trend_confidence_interval(
+    xs: list[float],
+    ys: list[float],
+    now_x: float,
+    x0: float,
+    window_days: float = WINDOW_DAYS,
+    half_life_days: float = HALF_LIFE_DAYS,
+    day_length: float = 1.0,
+    z: float = CONFIDENCE_Z,
+) -> tuple[float, float, float] | None:
+    """Previsione (predicted, lower, upper) nel punto x0, con la stessa
+    pipeline pesata/robusta di trend_regression. L'intervallo tiene conto sia
+    dell'incertezza sulla retta sia della dispersione naturale dei punti
+    intorno ad essa (e' un intervallo di previsione, non solo sulla media).
+    None se i dati non bastano a stimare una dispersione (serve varianza)."""
+    prepared = _prepare_trend_series(
+        xs, ys, now_x, window_days * day_length, half_life_days * day_length
+    )
+    if prepared is None:
+        return None
+    fxs, fys, weights = prepared
+    reg = weighted_linear_regression(fxs, fys, weights)
+    if reg is None:
+        return None
+    slope, intercept = reg
+
+    sum_w = sum(weights)
+    dof = sum_w - 2
+    if dof <= 0:
+        return None
+    mean_x = sum(w * x for w, x in zip(weights, fxs)) / sum_w
+    sxx = sum(w * (x - mean_x) ** 2 for w, x in zip(weights, fxs))
+    if sxx <= 0:
+        return None
+    sse = sum(w * (y - (slope * x + intercept)) ** 2 for w, x, y in zip(weights, fxs, fys))
+    sigma2 = sse / dof
+
+    predicted = slope * x0 + intercept
+    var_pred = sigma2 * (1.0 + 1.0 / sum_w + (x0 - mean_x) ** 2 / sxx)
+    if var_pred < 0:
+        return None
+    margin = z * var_pred**0.5
+    return predicted, predicted - margin, predicted + margin
+
+
 def projected_exhaustion(slope: float, intercept: float, target: float = 100.0) -> float | None:
     """Ascissa (timestamp) stimata in cui la retta di tendenza raggiunge 'target'. None se non convergente."""
     if slope <= 0:

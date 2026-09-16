@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from math import erf, sqrt
 
 from textual import work
 from textual.app import App, ComposeResult
@@ -15,16 +16,20 @@ from textual_plotext import PlotextPlot
 
 from . import __version__
 from .cycle import (
+    CONFIDENCE_Z,
     HALF_LIFE_DAYS,
     WINDOW_DAYS,
     current_cycle,
     max_value_to_stay_on_pace,
     projected_exhaustion,
+    trend_confidence_interval,
     trend_regression,
 )
 
-SECONDS_PER_DAY = 86400.0
 from .storage import DemoStore, Entry, Store
+
+SECONDS_PER_DAY = 86400.0
+CONFIDENCE_PERCENT = round(erf(CONFIDENCE_Z / sqrt(2)) * 100)
 
 _NUMBER_CHARS = set("0123456789.+-eE_")
 
@@ -239,11 +244,11 @@ class EditValueScreen(ModalScreen[float | None]):
         self.dismiss(None)
 
 
-class TrendInfoScreen(ModalScreen[None]):
-    """Modale informativa su come viene calcolata la retta di tendenza."""
+class InfoScreen(ModalScreen[None]):
+    """Modale informativa su come vengono calcolati tendenza e intervallo."""
 
     DEFAULT_CSS = """
-    TrendInfoScreen {
+    InfoScreen {
         align: center middle;
     }
     #dialog {
@@ -269,6 +274,12 @@ class TrendInfoScreen(ModalScreen[None]):
                 f"si dimezza ogni {HALF_LIFE_DAYS:.0f} giorni\n"
                 "- [b]outlier[/b]: un valore anomalo isolato (es. inserito per "
                 "errore) viene automaticamente scartato dal calcolo\n\n"
+                "[b]Intervallo di confidenza (linea magenta a fine ciclo)[/b]\n\n"
+                f"Mostra un range (~{CONFIDENCE_PERCENT}% di probabilita') attorno al "
+                "valore finale previsto, calcolato dalla dispersione dei punti "
+                "intorno alla retta di tendenza: piu' i valori inseriti sono "
+                "irregolari, piu' il range e' ampio. Con pochi dati, o dati "
+                "troppo allineati, l'intervallo non viene mostrato.\n\n"
                 "La stessa tendenza alimenta anche l'avviso di rischio "
                 "esaurimento e il \"max oggi senza sforare\" in barra di stato.\n\n"
                 "Esc per chiudere."
@@ -393,7 +404,7 @@ class TokenCounterApp(App):
         Binding("ctrl+m", "toggle_mode", "Modalita' %/$", priority=True),
         Binding("ctrl+b", "set_plafond", "Plafond $", priority=True),
         Binding("ctrl+l", "show_entries", "Lista/modifica", priority=True),
-        Binding("question_mark", "show_trend_info", "Info tendenza", priority=True),
+        Binding("question_mark", "show_info", "Info", priority=True),
     ]
 
     def __init__(self) -> None:
@@ -446,8 +457,8 @@ class TokenCounterApp(App):
         self.query_one("#value_input", Input).focus()
 
     @work
-    async def action_show_trend_info(self) -> None:
-        await self.push_screen_wait(TrendInfoScreen())
+    async def action_show_info(self) -> None:
+        await self.push_screen_wait(InfoScreen())
         self.query_one("#value_input", Input).focus()
 
     def action_toggle_chart(self) -> None:
@@ -560,13 +571,25 @@ class TokenCounterApp(App):
         if entries:
             xs = [days_since_start(e.datetime) for e in entries]
             ys = [e.value for e in entries]
-            reg = trend_regression(xs, ys, days_since_start(datetime.now()))
+            now_days = days_since_start(datetime.now())
+            reg = trend_regression(xs, ys, now_days)
 
             if reg is not None:
                 slope, intercept = reg
                 t0, t1 = xs[0], cycle_len
                 trend_y = [slope * t0 + intercept, slope * t1 + intercept]
                 plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
+
+            ci = trend_confidence_interval(xs, ys, now_days, cycle_len)
+            if ci is not None:
+                _predicted, lower, upper = ci
+                plt.plot(
+                    [cycle_len, cycle_len],
+                    [lower, upper],
+                    marker="braille",
+                    color="magenta",
+                    label="intervallo",
+                )
 
             if self.store.chart_type == "bar":
                 plt.bar(xs, ys, color="cyan+", width=0.6, reset_ticks=False, label="consumo")
