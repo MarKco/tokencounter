@@ -107,13 +107,14 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
 | `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
 | `Ctrl+L`                     | Apre la lista dei valori inseriti (modalita' corrente), per modificarli o eliminarli |
-| `?`                          | Mostra come viene calcolata la retta di tendenza                                     |
+| `?`                          | Info: come vengono calcolati tendenza e intervallo di confidenza                     |
 
 ### Grafico a linee
 
 - Linea ciano con punti = valori inseriti, interpolati
 - Linea gialla = retta di tendenza, calcolata per regressione lineare pesata sugli ultimi 14 giorni di valori inseriti: i punti più recenti pesano di più (si dimezzano ogni 7 giorni) e un valore anomalo isolato (es. inserito per errore) viene automaticamente scartato dal calcolo
 - Linea arancione = "budget ideale", cioè l'andamento lineare da 0 al "pieno" (100% oppure il plafond in $) dall'inizio alla fine del ciclo corrente, utile per capire a colpo d'occhio se si sta consumando più o meno del previsto
+- Segmento magenta verticale a fine ciclo = intervallo di confidenza (~90%) sul valore finale previsto: più i valori inseriti sono irregolari, più è ampio. Non compare se non ci sono abbastanza dati per stimarlo
 
 Il grafico mostra sempre e solo il ciclo corrente (dal giorno di reset a quello successivo): i valori inseriti nei cicli precedenti restano salvati ma non compaiono più una volta chiuso il ciclo. Cambiare il giorno di reset (`Ctrl+R`) non cancella né mescola dati: serve solo a spostare "dove sei" all'interno del mese.
 
