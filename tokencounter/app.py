@@ -565,13 +565,22 @@ class TokenCounterApp(App):
         def fmt_rate(value: float) -> str:
             return f"{value:.{decimals}f}{unit}/g"
 
-        plt.plot(
-            [0.0, cycle_len],
-            [0, target],
-            marker="braille",
-            color="orange",
-            label="budget ideale",
-        )
+        def draw_budget_ideale() -> None:
+            plt.plot(
+                [0.0, cycle_len],
+                [0, target],
+                marker="braille",
+                color="orange",
+                label="budget ideale",
+            )
+
+        is_bar = self.store.chart_type == "bar"
+
+        # In modalita' barre il budget ideale va disegnato per ultimo (sopra
+        # tendenza e consumo, entrambi a blocchi) per restare visibile anche
+        # se i blocchi lo oltrepassano. In modalita' linee resta per primo.
+        if not is_bar:
+            draw_budget_ideale()
 
         info_lines = [f"pace ideale: {fmt_rate(target / cycle_len)}"] if cycle_len > 0 else []
 
@@ -584,9 +593,27 @@ class TokenCounterApp(App):
 
             if reg is not None:
                 slope, intercept = reg
-                t0, t1 = xs[0], cycle_len
-                trend_y = [slope * t0 + intercept, slope * t1 + intercept]
-                plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
+                if is_bar:
+                    # Tendenza a blocchi contigui (un giorno per barra) dal
+                    # primo valore inserito fino a fine ciclo, cosi' si vede
+                    # anche la proiezione futura oltre l'ultimo dato reale.
+                    trend_xs = [xs[0]]
+                    while trend_xs[-1] < cycle_len - 1.0:
+                        trend_xs.append(trend_xs[-1] + 1.0)
+                    trend_xs.append(cycle_len)
+                    trend_ys = [max(0.0, slope * x + intercept) for x in trend_xs]
+                    plt.bar(
+                        trend_xs,
+                        trend_ys,
+                        color="yellow",
+                        width=1.0,
+                        reset_ticks=False,
+                        label="tendenza",
+                    )
+                else:
+                    t0, t1 = xs[0], cycle_len
+                    trend_y = [slope * t0 + intercept, slope * t1 + intercept]
+                    plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
                 span_days = xs[-1] - xs[0]
                 info_lines.append(f"rate ultimi {span_days:.1f}g: {fmt_rate(slope)}")
 
@@ -601,11 +628,14 @@ class TokenCounterApp(App):
                     label="intervallo di confidenza",
                 )
 
-            if self.store.chart_type == "bar":
+            if is_bar:
                 plt.bar(xs, ys, color="cyan+", width=0.6, reset_ticks=False, label="consumo")
             else:
                 plt.plot(xs, ys, marker="braille", color="cyan", label="consumo")
                 plt.scatter(xs, ys, marker="dot", color="cyan+")
+
+        if is_bar:
+            draw_budget_ideale()
 
         if info_lines:
             surface_rgb = Color.parse(self.app.theme_variables.get("surface", "#1e1e1e")).rgb
