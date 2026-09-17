@@ -116,6 +116,8 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 - Linea arancione = "budget ideale", cioè l'andamento lineare da 0 al "pieno" (100% oppure il plafond in $) dall'inizio alla fine del ciclo corrente, utile per capire a colpo d'occhio se si sta consumando più o meno del previsto
 - Segmento magenta verticale a fine ciclo = intervallo di confidenza (~90%) sul valore finale previsto: più i valori inseriti sono irregolari, più è ampio. Non compare se non ci sono abbastanza dati per stimarlo
 
+Sotto la legenda, nell'area in alto a sinistra (di solito libera perché a inizio ciclo si parte da zero), il grafico mostra anche in cifre il **pace ideale** (target diviso i giorni del ciclo, cioè la pendenza della linea arancione) e, se ci sono almeno due valori, il **rate** più recente (la pendenza della linea gialla, cioè quanto stai consumando al giorno secondo la tendenza pesata).
+
 Il grafico mostra sempre e solo il ciclo corrente (dal giorno di reset a quello successivo): i valori inseriti nei cicli precedenti restano salvati ma non compaiono più una volta chiuso il ciclo. Cambiare il giorno di reset (`Ctrl+R`) non cancella né mescola dati: serve solo a spostare "dove sei" all'interno del mese.
 
 ### "Max oggi senza sforare"
