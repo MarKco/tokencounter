@@ -8,6 +8,7 @@ from math import erf, sqrt
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.color import Color
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static
@@ -559,6 +560,10 @@ class TokenCounterApp(App):
         cycle_len = days_since_start(end_dt)
         target = self.store.target()
         unit = "$" if self.store.mode == "dollar" else "%"
+        decimals = 2 if unit == "$" else 1
+
+        def fmt_rate(value: float) -> str:
+            return f"{value:.{decimals}f}{unit}/g"
 
         plt.plot(
             [0.0, cycle_len],
@@ -567,6 +572,8 @@ class TokenCounterApp(App):
             color="orange",
             label="budget ideale",
         )
+
+        info_lines = [f"pace ideale: {fmt_rate(target / cycle_len)}"] if cycle_len > 0 else []
 
         entries = self._entries_in_cycle(start_dt, end_dt)
         if entries:
@@ -580,6 +587,8 @@ class TokenCounterApp(App):
                 t0, t1 = xs[0], cycle_len
                 trend_y = [slope * t0 + intercept, slope * t1 + intercept]
                 plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
+                span_days = xs[-1] - xs[0]
+                info_lines.append(f"rate ultimi {span_days:.1f}g: {fmt_rate(slope)}")
 
             ci = trend_confidence_interval(xs, ys, now_days, cycle_len)
             if ci is not None:
@@ -589,7 +598,7 @@ class TokenCounterApp(App):
                     [lower, upper],
                     marker="braille",
                     color="magenta",
-                    label="intervallo",
+                    label="intervallo di confidenza",
                 )
 
             if self.store.chart_type == "bar":
@@ -597,6 +606,17 @@ class TokenCounterApp(App):
             else:
                 plt.plot(xs, ys, marker="braille", color="cyan", label="consumo")
                 plt.scatter(xs, ys, marker="dot", color="cyan+")
+
+        if info_lines:
+            surface_rgb = Color.parse(self.app.theme_variables.get("surface", "#1e1e1e")).rgb
+            plt.text(
+                "\n".join(info_lines),
+                cycle_len * 0.02,
+                target * 1.1 * 0.68,
+                color="white",
+                background=surface_rgb,
+                alignment="left",
+            )
 
         tick_count = 6
         tick_x = [cycle_len * i / (tick_count - 1) for i in range(tick_count)]
