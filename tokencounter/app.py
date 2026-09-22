@@ -283,7 +283,10 @@ class InfoScreen(ModalScreen[None]):
                 "irregolari, piu' il range e' ampio. Con pochi dati, o dati "
                 "troppo allineati, l'intervallo non viene mostrato.\n\n"
                 "La stessa tendenza alimenta anche l'avviso di rischio "
-                "esaurimento e il \"max oggi senza sforare\" in barra di stato.\n\n"
+                "esaurimento e il \"max oggi senza sforare\" in barra di stato: "
+                "quest'ultimo e' il valore cumulativo massimo per restare in "
+                "pace col target, ma non supera mai il plafond residuo (target "
+                "meno quanto gia' speso nel ciclo).\n\n"
                 "Esc per chiudere."
             )
 
@@ -711,7 +714,11 @@ class TokenCounterApp(App):
             elif max_today <= 0:
                 max_today_text = f"[b red]0{unit} (gia' oltre la tendenza)[/]"
             elif max_today >= target:
-                max_today_text = f"[b green]{fmt(target)}+ (ampio margine)[/]"
+                remaining = max(target - entries[-1].value, 0.0)
+                max_today_text = (
+                    f"[b yellow]{fmt(remaining)} (nessun vincolo di pace, "
+                    f"limite e' il plafond residuo)[/]"
+                )
             else:
                 max_today_text = fmt(max_today)
 
