@@ -103,6 +103,8 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | `Ctrl+R`                     | Modifica giorno di reset (giorno del mese in cui i token si resettano)               |
 | `Ctrl+X`                     | Azzera tutti i valori inseriti (richiede conferma)                                   |
 | `T`                          | Alterna il grafico tra linee e barre                                                 |
+| `P`                          | Mostra/nasconde la linea del plafond                                                 |
+| `S`                          | Mostra/nasconde la linea di scarto da budget                                         |
 | `Ctrl+D`                     | Attiva/disattiva la modalita' demo                                                   |
 | `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
 | `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
@@ -115,6 +117,8 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 - Linea gialla = retta di tendenza, calcolata per regressione lineare pesata sugli ultimi 14 giorni di valori inseriti: i punti più recenti pesano di più (si dimezzano ogni 7 giorni) e un valore anomalo isolato (es. inserito per errore) viene automaticamente scartato dal calcolo
 - Linea arancione = "budget ideale", cioè l'andamento lineare da 0 al "pieno" (100% oppure il plafond in $) dall'inizio alla fine del ciclo corrente, utile per capire a colpo d'occhio se si sta consumando più o meno del previsto
 - Segmento magenta verticale a fine ciclo = intervallo di confidenza (~90%) sul valore finale previsto: più i valori inseriti sono irregolari, più è ampio. Non compare se non ci sono abbastanza dati per stimarlo
+- Linea bianca orizzontale (tasto `P` per mostrarla/nasconderla) = plafond (il "pieno"), utile per leggere le altre serie in proporzione
+- Segmento verde o rosso verticale sull'ultimo valore inserito (tasto `S` per mostrarlo/nasconderlo) = scarto percentuale tra l'ultimo valore reale e il budget ideale in quel punto: verde se sei sotto, rosso se sei sopra
 
 Sotto la legenda, nell'area in alto a sinistra (di solito libera perché a inizio ciclo si parte da zero), il grafico mostra anche in cifre il **pace ideale** (target diviso i giorni del ciclo, cioè la pendenza della linea arancione) e, se ci sono almeno due valori, il **rate** più recente (la pendenza della linea gialla, cioè quanto stai consumando al giorno secondo la tendenza pesata).
 
@@ -146,6 +150,10 @@ Nella barra di stato viene mostrato il valore massimo che puoi inserire adesso s
 - `e` modifica il valore della voce selezionata (si apre un campo con il valore attuale precompilato, pronto per essere sovrascritto)
 - `d` elimina la voce selezionata (richiede conferma)
 - `Esc` chiude la lista e torna al grafico, aggiornato con le eventuali modifiche
+
+### Se il grafico non si disegna
+
+Con dati particolari (es. più valori inseriti a distanza di pochi secondi tra loro) la retta di tendenza può risultare degenere e produrre coordinate che il motore grafico non riesce a gestire. In questi casi, invece di interrompere il programma, al posto del grafico compare un avviso rosso con il dettaglio dell'errore: apri `Ctrl+L` per correggere o eliminare i valori incriminati, il grafico tornerà a disegnarsi normalmente.
 
 ## Modalita' demo
 
