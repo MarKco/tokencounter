@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from math import erf, sqrt
 
+from rich.text import Text
 from textual import work
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
 from textual.color import Color
 from textual.containers import Horizontal, Vertical
@@ -383,6 +384,28 @@ class EntriesScreen(ModalScreen[None]):
         self.dismiss(None)
 
 
+class SafePlotextPlot(PlotextPlot):
+    """PlotextPlot che non si porta dietro tutta l'app se i dati producono
+    coordinate che plotext non regge (es. pendenza esplosa da timestamp
+    quasi coincidenti): mostra un avviso al posto del grafico anziche'
+    andare in crash."""
+
+    def render(self) -> RenderResult:
+        try:
+            return super().render()
+        except Exception as exc:
+            self.log.error(f"Rendering grafico fallito: {exc!r}")
+            return Text(
+                "Impossibile disegnare il grafico: uno o piu' valori "
+                "inseriti producono coordinate non gestibili (es. valori "
+                "inseriti a distanza di pochi secondi tra loro).\n\n"
+                f"Dettaglio: {exc}\n\n"
+                "Premi Ctrl+L per aprire l'elenco dei valori e modificarli "
+                "o eliminarli.",
+                style="bold red",
+            )
+
+
 class TokenCounterApp(App):
     """App principale: prompt per inserire il consumo (% o $) + grafico."""
 
@@ -433,7 +456,7 @@ class TokenCounterApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         yield Static(id="status")
-        yield PlotextPlot(id="plot")
+        yield SafePlotextPlot(id="plot")
         yield ValueInput(
             placeholder="",
             type="number",
@@ -567,7 +590,7 @@ class TokenCounterApp(App):
         return [e for e in self.store.entries if start_dt <= e.datetime < end_dt]
 
     def _draw_plot(self) -> None:
-        plot_widget = self.query_one("#plot", PlotextPlot)
+        plot_widget = self.query_one("#plot", SafePlotextPlot)
         plt = plot_widget.plt
         plt.clf()
 
@@ -587,6 +610,15 @@ class TokenCounterApp(App):
             return f"{value:.{decimals}f}{unit}/g"
 
         surface_rgb = Color.parse(self.app.theme_variables.get("surface", "#1e1e1e")).rgb
+
+        # Con punti quasi coincidenti in x (es. piu' valori inseriti a pochi
+        # secondi di distanza) la regressione puo' avere pendenza enorme:
+        # limita le coordinate passate al plot per evitare che numeri
+        # astronomici mandino in crash il rendering di plotext.
+        plot_lo, plot_hi = -2.0 * target, 3.0 * target
+
+        def clamp_y(value: float) -> float:
+            return max(plot_lo, min(plot_hi, value))
 
         def draw_budget_ideale() -> None:
             plt.plot(
@@ -633,7 +665,7 @@ class TokenCounterApp(App):
                     while trend_xs[-1] < cycle_len - 1.0:
                         trend_xs.append(trend_xs[-1] + 1.0)
                     trend_xs.append(cycle_len)
-                    trend_ys = [max(0.0, slope * x + intercept) for x in trend_xs]
+                    trend_ys = [clamp_y(max(0.0, slope * x + intercept)) for x in trend_xs]
                     plt.bar(
                         trend_xs,
                         trend_ys,
@@ -644,7 +676,7 @@ class TokenCounterApp(App):
                     )
                 else:
                     t0, t1 = xs[0], cycle_len
-                    trend_y = [slope * t0 + intercept, slope * t1 + intercept]
+                    trend_y = [clamp_y(slope * t0 + intercept), clamp_y(slope * t1 + intercept)]
                     plt.plot([t0, t1], trend_y, marker="braille", color="yellow", label="tendenza")
                 span_days = xs[-1] - xs[0]
                 info_lines.append(f"rate ultimi {span_days:.1f}g: {fmt_rate(slope)}")
@@ -654,7 +686,7 @@ class TokenCounterApp(App):
                 _predicted, lower, upper = ci
                 plt.plot(
                     [cycle_len, cycle_len],
-                    [lower, upper],
+                    [clamp_y(lower), clamp_y(upper)],
                     marker="braille",
                     color="magenta",
                     label="intervallo di confidenza",
