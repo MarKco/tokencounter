@@ -287,6 +287,14 @@ class InfoScreen(ModalScreen[None]):
                 "quest'ultimo e' il valore cumulativo massimo per restare in "
                 "pace col target, ma non supera mai il plafond residuo (target "
                 "meno quanto gia' speso nel ciclo).\n\n"
+                "[b]Linea plafond (bianca) e scarto da budget[/b]\n\n"
+                "La linea bianca orizzontale (tasto [b]p[/b] per "
+                "mostrarla/nasconderla) segna il plafond, per leggere a colpo "
+                "d'occhio le altre serie in proporzione. La linea verticale "
+                "sull'ultimo valore inserito (tasto [b]s[/b] per "
+                "mostrarla/nasconderla) mostra lo scarto percentuale tra "
+                "l'ultimo valore reale e il budget ideale in quel punto: verde "
+                "se sei sotto il budget ideale, rosso se sei sopra.\n\n"
                 "Esc per chiudere."
             )
 
@@ -405,6 +413,8 @@ class TokenCounterApp(App):
         Binding("ctrl+r", "set_reset_day", "Modifica giorno di reset", priority=True),
         Binding("ctrl+x", "clear_data", "Azzera dati", priority=True),
         Binding("t", "toggle_chart", "Linea/barre", priority=True),
+        Binding("p", "toggle_plafond_line", "Linea plafond", priority=True),
+        Binding("s", "toggle_gap_line", "Scarto da budget", priority=True),
         Binding("ctrl+d", "toggle_demo", "Demo", priority=True),
         Binding("ctrl+m", "toggle_mode", "Modalita' %/$", priority=True),
         Binding("ctrl+b", "set_plafond", "Plafond $", priority=True),
@@ -468,6 +478,14 @@ class TokenCounterApp(App):
 
     def action_toggle_chart(self) -> None:
         self.store.toggle_chart_type()
+        self.redraw()
+
+    def action_toggle_plafond_line(self) -> None:
+        self.store.toggle_plafond_line()
+        self.redraw()
+
+    def action_toggle_gap_line(self) -> None:
+        self.store.toggle_gap_line()
         self.redraw()
 
     def action_toggle_mode(self) -> None:
@@ -568,6 +586,8 @@ class TokenCounterApp(App):
         def fmt_rate(value: float) -> str:
             return f"{value:.{decimals}f}{unit}/g"
 
+        surface_rgb = Color.parse(self.app.theme_variables.get("surface", "#1e1e1e")).rgb
+
         def draw_budget_ideale() -> None:
             plt.plot(
                 [0.0, cycle_len],
@@ -584,6 +604,15 @@ class TokenCounterApp(App):
         # se i blocchi lo oltrepassano. In modalita' linee resta per primo.
         if not is_bar:
             draw_budget_ideale()
+
+        if self.store.show_plafond_line:
+            plt.plot(
+                [0.0, cycle_len],
+                [target, target],
+                marker="braille",
+                color="white",
+                label="plafond",
+            )
 
         info_lines = [f"pace ideale: {fmt_rate(target / cycle_len)}"] if cycle_len > 0 else []
 
@@ -640,8 +669,29 @@ class TokenCounterApp(App):
         if is_bar:
             draw_budget_ideale()
 
+        if entries and cycle_len and self.store.show_gap_line:
+            last_x, last_y = xs[-1], ys[-1]
+            budget_at_last_x = target * last_x / cycle_len
+            if budget_at_last_x:
+                gap_pct = (last_y - budget_at_last_x) / budget_at_last_x * 100
+                gap_color = "green" if last_y < budget_at_last_x else "red+"
+                plt.plot(
+                    [last_x, last_x],
+                    [last_y, budget_at_last_x],
+                    marker="braille",
+                    color=gap_color,
+                    label="scarto da budget",
+                )
+                plt.text(
+                    f"{gap_pct:+.1f}%",
+                    last_x,
+                    (last_y + budget_at_last_x) / 2,
+                    color=gap_color,
+                    background="default",
+                    alignment="center",
+                )
+
         if info_lines:
-            surface_rgb = Color.parse(self.app.theme_variables.get("surface", "#1e1e1e")).rgb
             plt.text(
                 "\n".join(info_lines),
                 cycle_len * 0.02,
@@ -724,6 +774,8 @@ class TokenCounterApp(App):
 
         status = self.query_one("#status", Static)
         chart_label = "barre" if self.store.chart_type == "bar" else "linea"
+        plafond_line_label = "visibile" if self.store.show_plafond_line else "nascosta"
+        gap_line_label = "visibile" if self.store.show_gap_line else "nascosto"
         mode_label = "$" if self.store.mode == "dollar" else "%"
         plafond_info = f"  [b]plafond:[/b] {self.store.plafond:.2f}$" if self.store.mode == "dollar" else ""
 
@@ -740,7 +792,9 @@ class TokenCounterApp(App):
             f"[b {days_color}]giorni rimanenti: {days_left}[/]  "
             f"[b]ultimo valore:[/b] {last_value}  "
             f"[b]max oggi senza sforare:[/b] {max_today_text}  "
-            f"[b]grafico:[/b] {chart_label} (t per cambiare)"
+            f"[b]grafico:[/b] {chart_label} (t per cambiare)  "
+            f"[b]linea plafond:[/b] {plafond_line_label} (p per cambiare)  "
+            f"[b]scarto da budget:[/b] {gap_line_label} (s per cambiare)"
             f"{warning}"
         )
 

@@ -31,6 +31,8 @@ class Store:
     chart_type: str = "line"  # "line" oppure "bar"
     mode: str = "percent"  # "percent" oppure "dollar"
     plafond: float = DEFAULT_PLAFOND
+    show_plafond_line: bool = True
+    show_gap_line: bool = True
     entries_percent: list[Entry] = field(default_factory=list)
     entries_dollar: list[Entry] = field(default_factory=list)
 
@@ -60,6 +62,8 @@ class Store:
             chart_type=raw.get("chart_type", "line"),
             mode=raw.get("mode", "percent"),
             plafond=raw.get("plafond", DEFAULT_PLAFOND),
+            show_plafond_line=raw.get("show_plafond_line", True),
+            show_gap_line=raw.get("show_gap_line", True),
             entries_percent=entries_percent,
             entries_dollar=entries_dollar,
         )
@@ -71,6 +75,8 @@ class Store:
             "chart_type": self.chart_type,
             "mode": self.mode,
             "plafond": self.plafond,
+            "show_plafond_line": self.show_plafond_line,
+            "show_gap_line": self.show_gap_line,
             "entries_percent": [{"ts": e.ts, "value": e.value} for e in self.entries_percent],
             "entries_dollar": [{"ts": e.ts, "value": e.value} for e in self.entries_dollar],
         }
@@ -102,6 +108,14 @@ class Store:
 
     def toggle_chart_type(self) -> None:
         self.chart_type = "bar" if self.chart_type == "line" else "line"
+        self.save()
+
+    def toggle_plafond_line(self) -> None:
+        self.show_plafond_line = not self.show_plafond_line
+        self.save()
+
+    def toggle_gap_line(self) -> None:
+        self.show_gap_line = not self.show_gap_line
         self.save()
 
     def toggle_mode(self) -> None:
