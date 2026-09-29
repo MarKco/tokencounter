@@ -438,6 +438,7 @@ class TokenCounterApp(App):
         Binding("t", "toggle_chart", "Linea/barre", priority=True),
         Binding("p", "toggle_plafond_line", "Linea plafond", priority=True),
         Binding("s", "toggle_gap_line", "Scarto da budget", priority=True),
+        Binding("g", "toggle_gap_history", "Storico scarto", priority=True),
         Binding("ctrl+d", "toggle_demo", "Demo", priority=True),
         Binding("ctrl+m", "toggle_mode", "Modalita' %/$", priority=True),
         Binding("ctrl+b", "set_plafond", "Plafond $", priority=True),
@@ -509,6 +510,10 @@ class TokenCounterApp(App):
 
     def action_toggle_gap_line(self) -> None:
         self.store.toggle_gap_line()
+        self.redraw()
+
+    def action_toggle_gap_history(self) -> None:
+        self.store.toggle_gap_history()
         self.redraw()
 
     def action_toggle_mode(self) -> None:
@@ -723,6 +728,38 @@ class TokenCounterApp(App):
                     alignment="center",
                 )
 
+        if entries and cycle_len and self.store.show_gap_history:
+            # Uno scarto per ogni giorno gia' trascorso nel ciclo, non solo
+            # sull'ultimo valore: usa l'ultimo valore noto fino a quel
+            # giorno (a gradini), cosi' si vede l'andamento nel tempo.
+            # Senza etichetta nella legenda (altrimenti una riga per
+            # giorno la riempirebbe), a differenza dello scarto singolo.
+            last_day = int(min(now_days, cycle_len))
+            for day in range(1, last_day + 1):
+                budget_at_day = target * day / cycle_len
+                if not budget_at_day:
+                    continue
+                known = [y for x, y in zip(xs, ys) if x <= day]
+                if not known:
+                    continue
+                value_at_day = known[-1]
+                gap_pct = (value_at_day - budget_at_day) / budget_at_day * 100
+                gap_color = "green" if value_at_day < budget_at_day else "red+"
+                plt.plot(
+                    [day, day],
+                    [clamp_y(value_at_day), clamp_y(budget_at_day)],
+                    marker="braille",
+                    color=gap_color,
+                )
+                plt.text(
+                    f"{gap_pct:+.0f}%",
+                    day,
+                    clamp_y((value_at_day + budget_at_day) / 2),
+                    color=gap_color,
+                    background="default",
+                    alignment="center",
+                )
+
         if info_lines:
             plt.text(
                 "\n".join(info_lines),
@@ -808,6 +845,7 @@ class TokenCounterApp(App):
         chart_label = "barre" if self.store.chart_type == "bar" else "linea"
         plafond_line_label = "visibile" if self.store.show_plafond_line else "nascosta"
         gap_line_label = "visibile" if self.store.show_gap_line else "nascosto"
+        gap_history_label = "visibile" if self.store.show_gap_history else "nascosto"
         mode_label = "$" if self.store.mode == "dollar" else "%"
         plafond_info = f"  [b]plafond:[/b] {self.store.plafond:.2f}$" if self.store.mode == "dollar" else ""
 
@@ -826,7 +864,8 @@ class TokenCounterApp(App):
             f"[b]max oggi senza sforare:[/b] {max_today_text}  "
             f"[b]grafico:[/b] {chart_label} (t per cambiare)  "
             f"[b]linea plafond:[/b] {plafond_line_label} (p per cambiare)  "
-            f"[b]scarto da budget:[/b] {gap_line_label} (s per cambiare)"
+            f"[b]scarto da budget:[/b] {gap_line_label} (s per cambiare)  "
+            f"[b]storico scarto:[/b] {gap_history_label} (g per cambiare)"
             f"{warning}"
         )
 

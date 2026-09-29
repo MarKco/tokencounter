@@ -33,6 +33,7 @@ class Store:
     plafond: float = DEFAULT_PLAFOND
     show_plafond_line: bool = True
     show_gap_line: bool = True
+    show_gap_history: bool = False
     entries_percent: list[Entry] = field(default_factory=list)
     entries_dollar: list[Entry] = field(default_factory=list)
 
@@ -64,6 +65,7 @@ class Store:
             plafond=raw.get("plafond", DEFAULT_PLAFOND),
             show_plafond_line=raw.get("show_plafond_line", True),
             show_gap_line=raw.get("show_gap_line", True),
+            show_gap_history=raw.get("show_gap_history", False),
             entries_percent=entries_percent,
             entries_dollar=entries_dollar,
         )
@@ -77,6 +79,7 @@ class Store:
             "plafond": self.plafond,
             "show_plafond_line": self.show_plafond_line,
             "show_gap_line": self.show_gap_line,
+            "show_gap_history": self.show_gap_history,
             "entries_percent": [{"ts": e.ts, "value": e.value} for e in self.entries_percent],
             "entries_dollar": [{"ts": e.ts, "value": e.value} for e in self.entries_dollar],
         }
@@ -116,6 +119,10 @@ class Store:
 
     def toggle_gap_line(self) -> None:
         self.show_gap_line = not self.show_gap_line
+        self.save()
+
+    def toggle_gap_history(self) -> None:
+        self.show_gap_history = not self.show_gap_history
         self.save()
 
     def toggle_mode(self) -> None:

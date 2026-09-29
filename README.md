@@ -105,6 +105,7 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | `T`                          | Alterna il grafico tra linee e barre                                                 |
 | `P`                          | Mostra/nasconde la linea del plafond                                                 |
 | `S`                          | Mostra/nasconde la linea di scarto da budget                                         |
+| `G`                          | Mostra/nasconde lo storico dello scarto (un segmento per ogni giorno trascorso)      |
 | `Ctrl+D`                     | Attiva/disattiva la modalita' demo                                                   |
 | `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
 | `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
@@ -119,6 +120,7 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 - Segmento magenta verticale a fine ciclo = intervallo di confidenza (~90%) sul valore finale previsto: più i valori inseriti sono irregolari, più è ampio. Non compare se non ci sono abbastanza dati per stimarlo
 - Linea bianca orizzontale (tasto `P` per mostrarla/nasconderla) = plafond (il "pieno"), utile per leggere le altre serie in proporzione
 - Segmento verde o rosso verticale sull'ultimo valore inserito (tasto `S` per mostrarlo/nasconderlo) = scarto percentuale tra l'ultimo valore reale e il budget ideale in quel punto: verde se sei sotto, rosso se sei sopra
+- Segmenti verdi/rossi su ogni giorno gia' trascorso (tasto `G` per mostrarli/nasconderli, default nascosti) = come lo scarto sopra ma ripetuto giorno per giorno, per vedere a colpo d'occhio l'andamento dello scarto nel tempo invece che solo l'ultimo valore. Nei giorni senza un valore inserito usa l'ultimo valore noto fino a quel momento. Non compaiono nella legenda (altrimenti una voce per giorno la riempirebbe) e, con cicli lunghi, le etichette possono affollarsi
 
 Sotto la legenda, nell'area in alto a sinistra (di solito libera perché a inizio ciclo si parte da zero), il grafico mostra anche in cifre il **pace ideale** (target diviso i giorni del ciclo, cioè la pendenza della linea arancione) e, se ci sono almeno due valori, il **rate** più recente (la pendenza della linea gialla, cioè quanto stai consumando al giorno secondo la tendenza pesata).
 
