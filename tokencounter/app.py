@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from math import erf, sqrt
 
 from rich.text import Text
-from textual import work
+from textual import events, work
 from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
 from textual.color import Color
@@ -36,6 +36,12 @@ CONFIDENCE_PERCENT = round(erf(CONFIDENCE_Z / sqrt(2)) * 100)
 _NUMBER_CHARS = set("0123456789.+-eE_")
 
 DEMO_INTERVAL_SECONDS = 5.0
+
+# Oltre questa distanza dall'ultimo inserimento si assume che il consumo sia
+# rimasto fermo fino ad adesso (vedi _uses_virtual_point).
+VIRTUAL_POINT_AFTER = timedelta(minutes=5)
+FOCUS_REFRESH_SECONDS = 60.0
+ESTIMATED_COLOR = (0, 120, 120)
 
 # (giorno del ciclo demo, valore %): parte piano, poi accelera abbastanza da
 # mandare la retta di tendenza fuori budget, poi rallenta/scende.
@@ -453,6 +459,7 @@ class TokenCounterApp(App):
         self._demo_store: DemoStore | None = None
         self._demo_index = 0
         self._demo_timer = None
+        self._app_focused = True
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -468,6 +475,23 @@ class TokenCounterApp(App):
     def on_mount(self) -> None:
         self.query_one("#value_input", Input).focus()
         self.redraw()
+        self.set_interval(FOCUS_REFRESH_SECONDS, self._refresh_if_focused)
+
+    def on_app_focus(self, event: events.AppFocus) -> None:
+        self._app_focused = True
+        self.redraw()
+
+    def on_app_blur(self, event: events.AppBlur) -> None:
+        self._app_focused = False
+
+    def _refresh_if_focused(self) -> None:
+        if self._app_focused:
+            self.redraw()
+
+    def _uses_virtual_point(self, entries: list[Entry]) -> bool:
+        if self.store is self._demo_store or not entries:
+            return False
+        return datetime.now() - entries[-1].datetime > VIRTUAL_POINT_AFTER
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id != "value_input":
@@ -703,11 +727,26 @@ class TokenCounterApp(App):
                 plt.plot(xs, ys, marker="braille", color="cyan", label="consumo")
                 plt.scatter(xs, ys, marker="dot", color="cyan+")
 
+            # Punto "virtuale" adesso, con lo stesso valore dell'ultimo
+            # inserimento: non viene salvato ne' usato da tendenza e previsioni,
+            # serve solo a far avanzare lo scarto da budget col passare del tempo.
+            if self._uses_virtual_point(entries) and now_days < cycle_len:
+                plt.plot(
+                    [xs[-1], now_days],
+                    [ys[-1], ys[-1]],
+                    marker="braille",
+                    color=ESTIMATED_COLOR,
+                    label="consumo stimato",
+                )
+                gap_x = now_days
+            else:
+                gap_x = xs[-1]
+
         if is_bar:
             draw_budget_ideale()
 
         if entries and cycle_len and self.store.show_gap_line:
-            last_x, last_y = xs[-1], ys[-1]
+            last_x, last_y = gap_x, ys[-1]
             budget_at_last_x = target * last_x / cycle_len
             if budget_at_last_x:
                 gap_pct = (last_y - budget_at_last_x) / budget_at_last_x * 100
