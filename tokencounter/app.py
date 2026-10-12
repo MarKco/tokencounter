@@ -353,10 +353,9 @@ class EntriesScreen(ModalScreen[None]):
         table = self.query_one(DataTable)
         table.clear()
         for entry in self._store.entries:
+            value = entry.value_in(self._store.mode)
             value_text = (
-                f"{entry.value:.2f}{self._unit}"
-                if self._unit == "$"
-                else f"{entry.value:.1f}{self._unit}"
+                f"{value:.2f}{self._unit}" if self._unit == "$" else f"{value:.1f}{self._unit}"
             )
             table.add_row(entry.datetime.strftime("%d/%m/%Y %H:%M"), value_text)
 
@@ -366,7 +365,7 @@ class EntriesScreen(ModalScreen[None]):
         if table.row_count == 0:
             return
         index = table.cursor_row
-        current = self._store.entries[index].value
+        current = self._store.entries[index].value_in(self._store.mode)
         result = await self.app.push_screen_wait(EditValueScreen(current, self._unit))
         if result is not None:
             self._store.update_entry_value(index, result)
@@ -592,7 +591,14 @@ class TokenCounterApp(App):
         ts = datetime.combine(cycle.start, datetime.min.time()) + timedelta(
             days=offset_days, hours=10
         )
-        self._demo_store.entries.append(Entry(ts=ts.isoformat(timespec="seconds"), value=value))
+        self._demo_store.entries.append(
+            Entry(
+                ts=ts.isoformat(timespec="seconds"),
+                value=value,
+                unit=self._demo_store.mode,
+                plafond=self._demo_store.plafond,
+            )
+        )
         self._demo_store.entries.sort(key=lambda e: e.ts)
         self.redraw()
 
@@ -679,7 +685,7 @@ class TokenCounterApp(App):
         entries = self._entries_in_cycle(start_dt, end_dt)
         if entries:
             xs = [days_since_start(e.datetime) for e in entries]
-            ys = [e.value for e in entries]
+            ys = [e.value_in(self.store.mode) for e in entries]
             now_days = days_since_start(datetime.now())
             reg = trend_regression(xs, ys, now_days)
 
@@ -839,14 +845,14 @@ class TokenCounterApp(App):
         else:
             days_color = "red"
 
-        last_value = fmt(entries[-1].value) if entries else "n/d"
+        last_value = fmt(entries[-1].value_in(self.store.mode)) if entries else "n/d"
 
         cycle_end_ts = end_dt.timestamp()
 
         warning = ""
         if entries and len(entries) >= 2:
             xs_num = [e.datetime.timestamp() for e in entries]
-            ys = [e.value for e in entries]
+            ys = [e.value_in(self.store.mode) for e in entries]
             now_ts = datetime.now().timestamp()
             reg = trend_regression(xs_num, ys, now_ts, day_length=SECONDS_PER_DAY)
             if reg is not None:
@@ -865,7 +871,7 @@ class TokenCounterApp(App):
         # (un giorno oltre quelli gia' trascorsi).
         elapsed_full_days = (today - cycle.start).days
         ideal_end_of_today = target * min(elapsed_full_days + 1, cycle.total_days) / cycle.total_days
-        already_spent = entries[-1].value if entries else 0.0
+        already_spent = entries[-1].value_in(self.store.mode) if entries else 0.0
         if ideal_end_of_today <= already_spent:
             max_today_text = f"[b red]0{unit} (gia' oltre il pace ideale)[/]"
         else:

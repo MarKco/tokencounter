@@ -83,12 +83,14 @@ Il programma apre una schermata a schermo intero con:
 
 ### Modalita' % o $
 
-Il programma puo' ragionare in due modalita', indipendenti tra loro (ciascuna ha la propria serie di valori salvata separatamente):
+Il programma puo' ragionare in due unita':
 
 - **%** (default): inserisci la percentuale di token consumati finora nel ciclo (0-100)
 - **$**: inserisci quanti $ hai consumato finora nel ciclo, con tutti i decimali che vuoi (utile quando la percentuale non e' abbastanza precisa). Il "pieno" non e' 100 ma un **plafond** in $ che imposti tu (default 500), e che si resets col ciclo esattamente come il 100%
 
-`Ctrl+M` alterna tra le due modalita'. `Ctrl+B` apre una finestra per cambiare il plafond in $. Passare da una modalita' all'altra e' solo un cambio di vista: i valori dell'altra modalita' restano intatti e li ritrovi tali e quali tornando indietro.
+`Ctrl+M` alterna tra le due unita', `Ctrl+B` apre una finestra per cambiare il plafond in $.
+
+Esiste un'unica serie di valori: puoi inserirne alcuni in % e altri in $, anche nello stesso ciclo, e il grafico li mostra sempre tutti insieme, convertiti nell'unita' attualmente selezionata (1 "pieno" = plafond in $). `Ctrl+M` cambia solo l'unita' in cui stai leggendo/scrivendo, non quali valori vedi. La conversione di ogni valore usa il plafond che era impostato quando l'hai inserito: se in seguito cambi il plafond (`Ctrl+B`), i valori gia' inseriti non cambiano significato. Se modifichi un valore esistente (`Ctrl+L`, poi `e`) con un'unita' di visualizzazione diversa da quella con cui era stato inserito, da quel momento "nasce" nella nuova unita' (perde il legame con l'unita'/plafond originali).
 
 ### Inserire un valore
 
@@ -143,11 +145,11 @@ Nella barra di stato viene mostrato il totale massimo (non l'incremento, il tota
 
 ### Azzerare i dati
 
-`Ctrl+X` apre una finestra di conferma. Selezionando "Sì, azzera" vengono cancellati i valori della **sola modalità attiva** (% oppure $ — l'altra serie non viene toccata). Giorno di reset e plafond restano invariati. `Esc` o "Annulla" chiudono senza cancellare nulla.
+`Ctrl+X` apre una finestra di conferma. Selezionando "Sì, azzera" vengono cancellati **tutti** i valori inseriti, in entrambe le unità. Giorno di reset e plafond restano invariati. `Esc` o "Annulla" chiudono senza cancellare nulla.
 
 ### Vedere e modificare i valori inseriti
 
-`Ctrl+L` apre la lista di tutti i valori inseriti nella modalità attiva (data/ora e valore), utile se ti accorgi di aver sbagliato qualcosa. Dentro la lista:
+`Ctrl+L` apre la lista di tutti i valori inseriti, qualunque sia l'unità con cui sono stati inseriti (mostrati convertiti nell'unità attiva), utile se ti accorgi di aver sbagliato qualcosa. Dentro la lista:
 
 - Frecce su/giù per spostarti tra le voci
 - `e` modifica il valore della voce selezionata (si apre un campo con il valore attuale precompilato, pronto per essere sovrascritto)
@@ -166,7 +168,7 @@ La demo non tocca mai i dati reali salvati: mentre e' attiva lo vedi dall'etiche
 
 ## Persistenza dei dati
 
-Tutto (valori inseriti in entrambe le modalità, giorno di reset, tipo di grafico, modalità attiva e plafond in $) viene salvato in:
+Tutto (i valori inseriti, ciascuno con la propria unità e il plafond del momento, giorno di reset, tipo di grafico, unità attiva e plafond in $) viene salvato in:
 
 ```
 ~/.config/tokencounter/data.json
