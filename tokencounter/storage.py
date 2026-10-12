@@ -50,6 +50,7 @@ class Store:
     show_plafond_line: bool = True
     show_gap_line: bool = True
     show_gap_history: bool = False
+    show_gap_chart: bool = False
     entries: list[Entry] = field(default_factory=list)
 
     def target(self) -> float:
@@ -97,6 +98,7 @@ class Store:
             show_plafond_line=raw.get("show_plafond_line", True),
             show_gap_line=raw.get("show_gap_line", True),
             show_gap_history=raw.get("show_gap_history", False),
+            show_gap_chart=raw.get("show_gap_chart", False),
             entries=entries,
         )
 
@@ -110,6 +112,7 @@ class Store:
             "show_plafond_line": self.show_plafond_line,
             "show_gap_line": self.show_gap_line,
             "show_gap_history": self.show_gap_history,
+            "show_gap_chart": self.show_gap_chart,
             "history": [
                 {"ts": e.ts, "value": e.value, "unit": e.unit, "plafond": e.plafond}
                 for e in self.entries
@@ -167,6 +170,10 @@ class Store:
 
     def toggle_gap_history(self) -> None:
         self.show_gap_history = not self.show_gap_history
+        self.save()
+
+    def toggle_gap_chart(self) -> None:
+        self.show_gap_chart = not self.show_gap_chart
         self.save()
 
     def toggle_mode(self) -> None:

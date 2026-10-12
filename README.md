@@ -108,6 +108,7 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | `P`                          | Mostra/nasconde la linea del plafond                                                 |
 | `S`                          | Mostra/nasconde la linea di scarto da budget                                         |
 | `G`                          | Mostra/nasconde lo storico dello scarto (un segmento per ogni giorno trascorso)      |
+| `V`                          | Alterna tra il grafico normale e il grafico a barre dello scarto da budget           |
 | `Ctrl+D`                     | Attiva/disattiva la modalita' demo                                                   |
 | `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
 | `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
@@ -128,6 +129,10 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 Sotto la legenda, nell'area in alto a sinistra (di solito libera perché a inizio ciclo si parte da zero), il grafico mostra anche in cifre il **pace ideale** (target diviso i giorni del ciclo, cioè la pendenza della linea arancione) e, se ci sono almeno due valori, il **rate** più recente (la pendenza della linea gialla, cioè quanto stai consumando al giorno secondo la tendenza pesata).
 
 Il grafico mostra sempre e solo il ciclo corrente (dal giorno di reset a quello successivo): i valori inseriti nei cicli precedenti restano salvati ma non compaiono più una volta chiuso il ciclo. Cambiare il giorno di reset (`Ctrl+R`) non cancella né mescola dati: serve solo a spostare "dove sei" all'interno del mese.
+
+### Grafico dello scarto (tasto V)
+
+`V` sostituisce il grafico normale con una vista dedicata allo scarto da budget, un grafico a barre con una barra per ogni giorno già trascorso nel ciclo (stessa logica di `G`: usa l'ultimo valore noto fino a quel giorno). Serve a vedere a colpo d'occhio l'andamento dello scarto nel tempo, cosa che sul grafico normale è difficile da apprezzare misurando a vista la distanza tra due linee oblique (consumo e budget ideale). Barre verdi sotto la riga a zero = giorni in anticipo sul pace ideale, barre rosse sopra = giorni in ritardo. Premi di nuovo `V` per tornare al grafico normale.
 
 ### "Max oggi senza sforare"
 
