@@ -129,7 +129,7 @@ Il grafico mostra sempre e solo il ciclo corrente (dal giorno di reset a quello 
 
 ### "Max oggi senza sforare"
 
-Nella barra di stato viene mostrato il valore massimo che puoi inserire adesso senza che la retta di tendenza (ricalcolata includendo questo nuovo valore) superi il "pieno" (100% oppure il plafond in $) entro la fine del ciclo. Se il valore è già oltre la tendenza attuale, o se non ci sono ancora abbastanza dati, viene mostrato un messaggio invece di un numero.
+Nella barra di stato viene mostrato il totale massimo (non l'incremento, il totale cumulativo del ciclo) a cui puoi arrivare oggi restando esattamente sul **pace ideale** da domani in poi fino alla fine del ciclo. Non dipende dalla tendenza né dallo storico dei valori inseriti: è puro calcolo di calendario (giorni già trascorsi contro giorni totali del ciclo), quindi è visibile fin dal primo giorno anche senza aver ancora inserito nulla. Se hai già un totale più alto di questo valore, viene mostrato "0" con un avviso, perché il totale non può scendere.
 
 ### Grafico a barre
 

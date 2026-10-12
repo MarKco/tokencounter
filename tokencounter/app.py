@@ -22,7 +22,6 @@ from .cycle import (
     HALF_LIFE_DAYS,
     WINDOW_DAYS,
     current_cycle,
-    max_value_to_stay_on_pace,
     projected_exhaustion,
     trend_confidence_interval,
     trend_regression,
@@ -845,40 +844,32 @@ class TokenCounterApp(App):
         cycle_end_ts = end_dt.timestamp()
 
         warning = ""
-        max_today_text = "n/d"
-        if entries:
+        if entries and len(entries) >= 2:
             xs_num = [e.datetime.timestamp() for e in entries]
             ys = [e.value for e in entries]
-
             now_ts = datetime.now().timestamp()
+            reg = trend_regression(xs_num, ys, now_ts, day_length=SECONDS_PER_DAY)
+            if reg is not None:
+                slope, intercept = reg
+                exhaustion_ts = projected_exhaustion(slope, intercept, target=target)
+                if exhaustion_ts is not None and exhaustion_ts < cycle_end_ts:
+                    exhaustion_date = datetime.fromtimestamp(exhaustion_ts)
+                    warning = (
+                        f"  [b red]! rischio esaurimento entro il "
+                        f"{exhaustion_date.strftime('%d/%m %H:%M')}[/]"
+                    )
 
-            if len(entries) >= 2:
-                reg = trend_regression(xs_num, ys, now_ts, day_length=SECONDS_PER_DAY)
-                if reg is not None:
-                    slope, intercept = reg
-                    exhaustion_ts = projected_exhaustion(slope, intercept, target=target)
-                    if exhaustion_ts is not None and exhaustion_ts < cycle_end_ts:
-                        exhaustion_date = datetime.fromtimestamp(exhaustion_ts)
-                        warning = (
-                            f"  [b red]! rischio esaurimento entro il "
-                            f"{exhaustion_date.strftime('%d/%m %H:%M')}[/]"
-                        )
-
-            max_today = max_value_to_stay_on_pace(
-                xs_num, ys, now_ts, cycle_end_ts, target=target, day_length=SECONDS_PER_DAY
-            )
-            if max_today is None:
-                max_today_text = "n/d"
-            elif max_today <= 0:
-                max_today_text = f"[b red]0{unit} (gia' oltre la tendenza)[/]"
-            elif max_today >= target:
-                remaining = max(target - entries[-1].value, 0.0)
-                max_today_text = (
-                    f"[b yellow]{fmt(remaining)} (nessun vincolo di pace, "
-                    f"limite e' il plafond residuo)[/]"
-                )
-            else:
-                max_today_text = fmt(max_today)
+        # Totale massimo raggiungibile oggi restando esattamente sul pace
+        # ideale da domani in poi fino a fine ciclo: non dipende dalla
+        # tendenza, e' il budget ideale proiettato a fine giornata odierna
+        # (un giorno oltre quelli gia' trascorsi).
+        elapsed_full_days = (today - cycle.start).days
+        ideal_end_of_today = target * min(elapsed_full_days + 1, cycle.total_days) / cycle.total_days
+        already_spent = entries[-1].value if entries else 0.0
+        if ideal_end_of_today <= already_spent:
+            max_today_text = f"[b red]0{unit} (gia' oltre il pace ideale)[/]"
+        else:
+            max_today_text = fmt(ideal_end_of_today)
 
         status = self.query_one("#status", Static)
         chart_label = "barre" if self.store.chart_type == "bar" else "linea"
