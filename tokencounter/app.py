@@ -704,12 +704,43 @@ class TokenCounterApp(App):
         gap_is_dollar = self.store.gap_unit == "dollar"
         gap_values = [(day, gap_dollar if gap_is_dollar else gap_pct) for day, gap_pct, gap_dollar, _, _ in daily]
 
-        under = [(day, v) for day, v in gap_values if v < 0]
-        over = [(day, v) for day, v in gap_values if v >= 0]
+        # Se una barra e' minuscola rispetto all'escursione totale (es. uno
+        # scarto quasi nullo a inizio ciclo contro uno scarto enorme a fine
+        # ciclo), la risoluzione a caratteri di plotext puo' arrotondarne
+        # l'altezza fino a farla sparire o a farla sembrare dalla parte
+        # sbagliata dello zero. Si impone quindi un'altezza minima visibile
+        # (segno preservato, solo per il disegno) e si etichetta ogni barra
+        # col valore vero, cosi' il numero resta leggibile anche se il
+        # disegno a quella scala e' ambiguo.
+        if gap_values:
+            max_abs = max(abs(v) for _, v in gap_values)
+            floor_mag = max_abs * 0.1
+        else:
+            floor_mag = 0.0
+
+        def floored(v: float) -> float:
+            if floor_mag and abs(v) < floor_mag:
+                return floor_mag if v >= 0 else -floor_mag
+            return v
+
+        plotted = [(day, floored(v)) for day, v in gap_values]
+        under = [(day, v) for day, v in plotted if v < 0]
+        over = [(day, v) for day, v in plotted if v >= 0]
         if under:
             plt.bar([d for d, _ in under], [v for _, v in under], color="green", width=0.6)
         if over:
             plt.bar([d for d, _ in over], [v for _, v in over], color="red+", width=0.6)
+
+        decimals = 2 if gap_is_dollar else 0
+        for (day, v), (_, plotted_v) in zip(gap_values, plotted):
+            plt.text(
+                f"{v:+.{decimals}f}",
+                day,
+                plotted_v,
+                color="green" if v < 0 else "red+",
+                background="default",
+                alignment="center",
+            )
 
         if cycle_len:
             plt.plot([0.0, cycle_len], [0, 0], marker="braille", color="white")
