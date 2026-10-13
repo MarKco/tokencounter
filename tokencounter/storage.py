@@ -51,6 +51,7 @@ class Store:
     show_gap_line: bool = True
     show_gap_history: bool = False
     show_gap_chart: bool = False
+    gap_unit: str = "percent"  # unita' in cui esprimere lo scarto da budget (S/G/V): "percent" oppure "dollar"
     entries: list[Entry] = field(default_factory=list)
 
     def target(self) -> float:
@@ -99,6 +100,7 @@ class Store:
             show_gap_line=raw.get("show_gap_line", True),
             show_gap_history=raw.get("show_gap_history", False),
             show_gap_chart=raw.get("show_gap_chart", False),
+            gap_unit=raw.get("gap_unit", "percent"),
             entries=entries,
         )
 
@@ -113,6 +115,7 @@ class Store:
             "show_gap_line": self.show_gap_line,
             "show_gap_history": self.show_gap_history,
             "show_gap_chart": self.show_gap_chart,
+            "gap_unit": self.gap_unit,
             "history": [
                 {"ts": e.ts, "value": e.value, "unit": e.unit, "plafond": e.plafond}
                 for e in self.entries
@@ -174,6 +177,12 @@ class Store:
 
     def toggle_gap_chart(self) -> None:
         self.show_gap_chart = not self.show_gap_chart
+        self.save()
+
+    def toggle_gap_unit(self) -> None:
+        """Cambia l'unita' in cui e' espresso lo scarto da budget (S/G/V),
+        indipendente dall'unita' del grafico (mode)."""
+        self.gap_unit = "dollar" if self.gap_unit == "percent" else "percent"
         self.save()
 
     def toggle_mode(self) -> None:

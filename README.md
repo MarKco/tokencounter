@@ -109,6 +109,7 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 | `S`                          | Mostra/nasconde la linea di scarto da budget                                         |
 | `G`                          | Mostra/nasconde lo storico dello scarto (un segmento per ogni giorno trascorso)      |
 | `V`                          | Alterna tra il grafico normale e il grafico a barre dello scarto da budget           |
+| `U`                          | Alterna l'unità in cui è espresso lo scarto da budget (% oppure $)                   |
 | `Ctrl+D`                     | Attiva/disattiva la modalita' demo                                                   |
 | `Ctrl+M`                     | Alterna tra modalita' % e modalita' $                                                |
 | `Ctrl+B`                     | Apre la finestra per cambiare il plafond in $                                        |
@@ -122,7 +123,7 @@ Digita un numero nel campo in basso (percentuale 0-100, oppure $ consumati a sec
 - Linea arancione = "budget ideale", cioè l'andamento lineare da 0 al "pieno" (100% oppure il plafond in $) dall'inizio alla fine del ciclo corrente, utile per capire a colpo d'occhio se si sta consumando più o meno del previsto
 - Segmento magenta verticale a fine ciclo = intervallo di confidenza (~90%) sul valore finale previsto: più i valori inseriti sono irregolari, più è ampio. Non compare se non ci sono abbastanza dati per stimarlo
 - Linea bianca orizzontale (tasto `P` per mostrarla/nasconderla) = plafond (il "pieno"), utile per leggere le altre serie in proporzione
-- Segmento verde o rosso verticale sull'ultimo valore inserito (tasto `S` per mostrarlo/nasconderlo) = scarto percentuale tra l'ultimo valore reale e il budget ideale in quel punto: verde se sei sotto, rosso se sei sopra
+- Segmento verde o rosso verticale sull'ultimo valore inserito (tasto `S` per mostrarlo/nasconderlo) = scarto tra l'ultimo valore reale e il budget ideale in quel punto: verde se sei sotto, rosso se sei sopra. L'etichetta numerica è in % oppure in $ a seconda dell'**unità dello scarto** (tasto `U`, vedi sotto)
 - Linea ciano scuro "consumo stimato" = se l'ultimo valore inserito ha piu' di 5 minuti, si assume che il consumo sia rimasto fermo fino ad adesso: la linea prolunga l'ultimo valore fino al momento attuale e lo scarto da budget (`S`) viene calcolato adesso invece che sull'ultimo inserimento. Il valore stimato non viene salvato e non entra nella tendenza ne' nelle previsioni; appena inserisci un valore vero si riparte da quello. Si aggiorna all'avvio, quando la finestra del terminale riprende il focus e ogni minuto mentre e' in primo piano (il rilevamento del focus richiede un terminale che lo supporti, es. iTerm2, Kitty, WezTerm)
 - Segmenti verdi/rossi su ogni giorno gia' trascorso (tasto `G` per mostrarli/nasconderli, default nascosti) = come lo scarto sopra ma ripetuto giorno per giorno, per vedere a colpo d'occhio l'andamento dello scarto nel tempo invece che solo l'ultimo valore. Nei giorni senza un valore inserito usa l'ultimo valore noto fino a quel momento. Non compaiono nella legenda (altrimenti una voce per giorno la riempirebbe) e, con cicli lunghi, le etichette possono affollarsi
 
@@ -133,6 +134,10 @@ Il grafico mostra sempre e solo il ciclo corrente (dal giorno di reset a quello 
 ### Grafico dello scarto (tasto V)
 
 `V` sostituisce il grafico normale con una vista dedicata allo scarto da budget, un grafico a barre con una barra per ogni giorno già trascorso nel ciclo (stessa logica di `G`: usa l'ultimo valore noto fino a quel giorno). Serve a vedere a colpo d'occhio l'andamento dello scarto nel tempo, cosa che sul grafico normale è difficile da apprezzare misurando a vista la distanza tra due linee oblique (consumo e budget ideale). Barre verdi sotto la riga a zero = giorni in anticipo sul pace ideale, barre rosse sopra = giorni in ritardo. Premi di nuovo `V` per tornare al grafico normale.
+
+### Unità dello scarto (tasto U)
+
+`U` alterna tra percentuale e $ l'unità in cui è espresso lo scarto da budget, **indipendentemente** dall'unità del grafico (quella di `Ctrl+M`): puoi guardare il grafico in % e leggere lo scarto in $, o viceversa. Vale per tutte e tre le viste dello scarto (`S`, `G`, `V`). Lo scarto in $ si calcola sempre tramite il plafond (quello congelato sul valore già inserito, quello attuale per il budget ideale), quindi è disponibile anche se stai guardando tutto in %. Su `S` e `G` cambia solo il numero scritto sopra al segmento (la sua posizione resta quella del grafico); su `V` cambiano asse e altezza delle barre, perché lì lo scarto è il contenuto del grafico.
 
 ### "Max oggi senza sforare"
 

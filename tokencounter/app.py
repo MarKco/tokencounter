@@ -444,6 +444,7 @@ class TokenCounterApp(App):
         Binding("s", "toggle_gap_line", "Scarto da budget", priority=True),
         Binding("g", "toggle_gap_history", "Storico scarto", priority=True),
         Binding("v", "toggle_gap_chart", "Grafico scarto", priority=True),
+        Binding("u", "toggle_gap_unit", "Unita' scarto", priority=True),
         Binding("ctrl+d", "toggle_demo", "Demo", priority=True),
         Binding("ctrl+m", "toggle_mode", "Modalita' %/$", priority=True),
         Binding("ctrl+b", "set_plafond", "Plafond $", priority=True),
@@ -543,6 +544,10 @@ class TokenCounterApp(App):
         self.store.toggle_gap_chart()
         self.redraw()
 
+    def action_toggle_gap_unit(self) -> None:
+        self.store.toggle_gap_unit()
+        self.redraw()
+
     def action_toggle_mode(self) -> None:
         self.store.toggle_mode()
         self.redraw()
@@ -628,6 +633,24 @@ class TokenCounterApp(App):
         passare un reset non mescola dati di cicli diversi."""
         return [e for e in self.store.entries if start_dt <= e.datetime < end_dt]
 
+    def _gap_pct_dollar(self, entry: Entry, x: float, cycle_len: float) -> tuple[float, float] | None:
+        """Scarto da budget nel punto x (giorni dall'inizio ciclo), sempre in
+        $ (indipendente dall'unita' del grafico): usa il plafond attuale per
+        il budget ideale e il $ equivalente del valore (via il suo plafond
+        congelato). Ritorna (scarto%, scarto $), o None se non calcolabile."""
+        if not cycle_len:
+            return None
+        budget_dollar = self.store.plafond * x / cycle_len
+        if not budget_dollar:
+            return None
+        gap_dollar = entry.value_in("dollar") - budget_dollar
+        return gap_dollar / budget_dollar * 100, gap_dollar
+
+    def _fmt_gap(self, gap_pct: float, gap_dollar: float, decimals_pct: int = 1) -> str:
+        if self.store.gap_unit == "dollar":
+            return f"{gap_dollar:+.2f}$"
+        return f"{gap_pct:+.{decimals_pct}f}%"
+
     def _daily_gap_percentages(
         self,
         entries: list[Entry],
@@ -635,26 +658,31 @@ class TokenCounterApp(App):
         target: float,
         now_days: float,
         days_since_start,
-    ) -> list[tuple[int, float, float, float]]:
+    ) -> list[tuple[int, float, float, float, float]]:
         """Uno scarto per ogni giorno gia' trascorso nel ciclo, non solo
         sull'ultimo valore inserito: usa l'ultimo valore noto fino a quel
-        giorno (a gradini). Ritorna (giorno, scarto%, valore, budget ideale)."""
+        giorno (a gradini). Ritorna (giorno, scarto%, scarto$, valore,
+        budget ideale) — valore/budget nell'unita' del grafico (per la
+        geometria), scarto%/scarto$ sempre calcolati via plafond."""
         if not entries or not cycle_len:
             return []
         xs = [days_since_start(e.datetime) for e in entries]
-        ys = [e.value_in(self.store.mode) for e in entries]
         last_day = int(min(now_days, cycle_len))
         result = []
         for day in range(1, last_day + 1):
             budget_at_day = target * day / cycle_len
             if not budget_at_day:
                 continue
-            known = [y for x, y in zip(xs, ys) if x <= day]
+            known = [e for x, e in zip(xs, entries) if x <= day]
             if not known:
                 continue
-            value_at_day = known[-1]
-            gap_pct = (value_at_day - budget_at_day) / budget_at_day * 100
-            result.append((day, gap_pct, value_at_day, budget_at_day))
+            entry_at_day = known[-1]
+            gap = self._gap_pct_dollar(entry_at_day, day, cycle_len)
+            if gap is None:
+                continue
+            gap_pct, gap_dollar = gap
+            value_at_day = entry_at_day.value_in(self.store.mode)
+            result.append((day, gap_pct, gap_dollar, value_at_day, budget_at_day))
         return result
 
     def _draw_gap_chart(
@@ -664,7 +692,6 @@ class TokenCounterApp(App):
         start_dt: datetime,
         cycle_len: float,
         target: float,
-        unit: str,
         entries: list[Entry],
         now_days: float,
         days_since_start,
@@ -674,13 +701,15 @@ class TokenCounterApp(App):
         l'andamento meglio di quanto si riesca leggendo la distanza tra due
         linee oblique."""
         daily = self._daily_gap_percentages(entries, cycle_len, target, now_days, days_since_start)
+        gap_is_dollar = self.store.gap_unit == "dollar"
+        gap_values = [(day, gap_dollar if gap_is_dollar else gap_pct) for day, gap_pct, gap_dollar, _, _ in daily]
 
-        under = [(day, pct) for day, pct, _, _ in daily if pct < 0]
-        over = [(day, pct) for day, pct, _, _ in daily if pct >= 0]
+        under = [(day, v) for day, v in gap_values if v < 0]
+        over = [(day, v) for day, v in gap_values if v >= 0]
         if under:
-            plt.bar([d for d, _ in under], [p for _, p in under], color="green", width=0.6)
+            plt.bar([d for d, _ in under], [v for _, v in under], color="green", width=0.6)
         if over:
-            plt.bar([d for d, _ in over], [p for _, p in over], color="red+", width=0.6)
+            plt.bar([d for d, _ in over], [v for _, v in over], color="red+", width=0.6)
 
         if cycle_len:
             plt.plot([0.0, cycle_len], [0, 0], marker="braille", color="white")
@@ -690,9 +719,10 @@ class TokenCounterApp(App):
         tick_labels = [(start_dt + timedelta(days=t)).strftime("%d/%m") for t in tick_x]
         plt.xticks(tick_x, tick_labels)
 
-        plt.title(f"Scarto da budget, giorno per giorno ({unit})")
+        gap_unit_symbol = "$" if gap_is_dollar else "%"
+        plt.title(f"Scarto da budget, giorno per giorno ({gap_unit_symbol})")
         plt.xlabel("data")
-        plt.ylabel("scarto %")
+        plt.ylabel(f"scarto {gap_unit_symbol}")
         plot_widget.refresh()
 
     def _draw_plot(self) -> None:
@@ -715,7 +745,7 @@ class TokenCounterApp(App):
             entries = self._entries_in_cycle(start_dt, end_dt)
             now_days = days_since_start(datetime.now())
             self._draw_gap_chart(
-                plt, plot_widget, start_dt, cycle_len, target, unit, entries, now_days, days_since_start
+                plt, plot_widget, start_dt, cycle_len, target, entries, now_days, days_since_start
             )
             return
 
@@ -834,8 +864,9 @@ class TokenCounterApp(App):
         if entries and cycle_len and self.store.show_gap_line:
             last_x, last_y = gap_x, ys[-1]
             budget_at_last_x = target * last_x / cycle_len
-            if budget_at_last_x:
-                gap_pct = (last_y - budget_at_last_x) / budget_at_last_x * 100
+            gap = self._gap_pct_dollar(entries[-1], last_x, cycle_len) if budget_at_last_x else None
+            if gap is not None:
+                gap_pct, gap_dollar = gap
                 gap_color = "green" if last_y < budget_at_last_x else "red+"
                 plt.plot(
                     [last_x, last_x],
@@ -845,7 +876,7 @@ class TokenCounterApp(App):
                     label="scarto da budget",
                 )
                 plt.text(
-                    f"{gap_pct:+.1f}%",
+                    self._fmt_gap(gap_pct, gap_dollar, decimals_pct=1),
                     last_x,
                     (last_y + budget_at_last_x) / 2,
                     color=gap_color,
@@ -856,7 +887,7 @@ class TokenCounterApp(App):
         if entries and cycle_len and self.store.show_gap_history:
             # Senza etichetta nella legenda (altrimenti una riga per giorno
             # la riempirebbe), a differenza dello scarto singolo.
-            for day, gap_pct, value_at_day, budget_at_day in self._daily_gap_percentages(
+            for day, gap_pct, gap_dollar, value_at_day, budget_at_day in self._daily_gap_percentages(
                 entries, cycle_len, target, now_days, days_since_start
             ):
                 gap_color = "green" if value_at_day < budget_at_day else "red+"
@@ -867,7 +898,7 @@ class TokenCounterApp(App):
                     color=gap_color,
                 )
                 plt.text(
-                    f"{gap_pct:+.0f}%",
+                    self._fmt_gap(gap_pct, gap_dollar, decimals_pct=0),
                     day,
                     clamp_y((value_at_day + budget_at_day) / 2),
                     color=gap_color,
@@ -950,7 +981,6 @@ class TokenCounterApp(App):
 
         status = self.query_one("#status", Static)
         chart_label = "barre" if self.store.chart_type == "bar" else "linea"
-        gap_history_label = "visibile" if self.store.show_gap_history else "nascosto"
         mode_label = "$" if self.store.mode == "dollar" else "%"
         plafond_info = f"  [b]plafond:[/b] {self.store.plafond:.2f}$" if self.store.mode == "dollar" else ""
 
@@ -967,8 +997,7 @@ class TokenCounterApp(App):
             f"[b {days_color}]giorni rimanenti: {days_left}[/]  "
             f"[b]ultimo valore:[/b] {last_value}  "
             f"[b]max oggi senza sforare:[/b] {max_today_text}  "
-            f"[b]grafico:[/b] {chart_label} (t per cambiare)  "
-            f"[b]storico scarto:[/b] {gap_history_label} (g per cambiare)"
+            f"[b]grafico:[/b] {chart_label} (t per cambiare)"
             f"{warning}"
         )
 
