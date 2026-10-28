@@ -41,6 +41,9 @@ DEMO_INTERVAL_SECONDS = 5.0
 VIRTUAL_POINT_AFTER = timedelta(minutes=5)
 FOCUS_REFRESH_SECONDS = 60.0
 ESTIMATED_COLOR = (0, 120, 120)
+DAILY_UNDER_PACE_COLOR = (80, 180, 255)
+DAILY_OVER_PACE_COLOR = (255, 140, 0)
+DAILY_RATE_X_OFFSET = 0.3
 
 # (giorno del ciclo demo, valore %): parte piano, poi accelera abbastanza da
 # mandare la retta di tendenza fuori budget, poi rallenta/scende.
@@ -443,6 +446,7 @@ class TokenCounterApp(App):
         Binding("p", "toggle_plafond_line", "Linea plafond", priority=True),
         Binding("s", "toggle_gap_line", "Scarto da budget", priority=True),
         Binding("g", "toggle_gap_history", "Storico scarto", priority=True),
+        Binding("d", "toggle_daily_rate", "Consumo giornaliero", priority=True),
         Binding("v", "toggle_gap_chart", "Grafico scarto", priority=True),
         Binding("u", "toggle_gap_unit", "Unita' scarto", priority=True),
         Binding("ctrl+d", "toggle_demo", "Demo", priority=True),
@@ -538,6 +542,10 @@ class TokenCounterApp(App):
 
     def action_toggle_gap_history(self) -> None:
         self.store.toggle_gap_history()
+        self.redraw()
+
+    def action_toggle_daily_rate(self) -> None:
+        self.store.toggle_daily_rate()
         self.redraw()
 
     def action_toggle_gap_chart(self) -> None:
@@ -933,6 +941,44 @@ class TokenCounterApp(App):
                     day,
                     clamp_y((value_at_day + budget_at_day) / 2),
                     color=gap_color,
+                    background="default",
+                    alignment="center",
+                )
+
+        if entries and cycle_len and self.store.show_daily_rate:
+            # Stessi estremi delle barre di G (dal valore cumulativo al budget
+            # ideale) ma l'etichetta e' il consumo di quel giorno, calcolato
+            # come differenza tra il valore noto a fine giorno e quello a fine
+            # giorno precedente (0 prima del primo valore). Il colore dice se
+            # quel giorno si e' consumato meno o piu' del pace ideale
+            # giornaliero. Barra spostata a destra di G per non sovrapporsi.
+            daily_pace = target / cycle_len
+            previous_value = 0.0
+            first_daily_bar = True
+            for day, _gap_pct, _gap_dollar, value_at_day, budget_at_day in self._daily_gap_percentages(
+                entries, cycle_len, target, now_days, days_since_start
+            ):
+                consumed = value_at_day - previous_value
+                previous_value = value_at_day
+                rate_color = DAILY_UNDER_PACE_COLOR if consumed <= daily_pace else DAILY_OVER_PACE_COLOR
+                x = day + DAILY_RATE_X_OFFSET
+                low, high = sorted((clamp_y(value_at_day), clamp_y(budget_at_day)))
+                plt.plot(
+                    [x, x],
+                    [low, high],
+                    marker="braille",
+                    color=rate_color,
+                    label="consumo giornaliero" if first_daily_bar else None,
+                )
+                first_daily_bar = False
+                # Con G acceso la sua etichetta occupa il centro: la sposto
+                # a un quarto dal basso per non sovrapporle.
+                label_y = low + (high - low) * (0.25 if self.store.show_gap_history else 0.5)
+                plt.text(
+                    f"{consumed:.{decimals}f}{unit}",
+                    x,
+                    label_y,
+                    color=rate_color,
                     background="default",
                     alignment="center",
                 )

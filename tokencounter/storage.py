@@ -50,6 +50,7 @@ class Store:
     show_plafond_line: bool = True
     show_gap_line: bool = True
     show_gap_history: bool = False
+    show_daily_rate: bool = False
     show_gap_chart: bool = False
     gap_unit: str = "percent"  # unita' in cui esprimere lo scarto da budget (S/G/V): "percent" oppure "dollar"
     entries: list[Entry] = field(default_factory=list)
@@ -99,6 +100,7 @@ class Store:
             show_plafond_line=raw.get("show_plafond_line", True),
             show_gap_line=raw.get("show_gap_line", True),
             show_gap_history=raw.get("show_gap_history", False),
+            show_daily_rate=raw.get("show_daily_rate", False),
             show_gap_chart=raw.get("show_gap_chart", False),
             gap_unit=raw.get("gap_unit", "percent"),
             entries=entries,
@@ -114,6 +116,7 @@ class Store:
             "show_plafond_line": self.show_plafond_line,
             "show_gap_line": self.show_gap_line,
             "show_gap_history": self.show_gap_history,
+            "show_daily_rate": self.show_daily_rate,
             "show_gap_chart": self.show_gap_chart,
             "gap_unit": self.gap_unit,
             "history": [
@@ -173,6 +176,10 @@ class Store:
 
     def toggle_gap_history(self) -> None:
         self.show_gap_history = not self.show_gap_history
+        self.save()
+
+    def toggle_daily_rate(self) -> None:
+        self.show_daily_rate = not self.show_daily_rate
         self.save()
 
     def toggle_gap_chart(self) -> None:
