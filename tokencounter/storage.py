@@ -48,7 +48,7 @@ class Store:
     mode: str = "percent"  # unita' di visualizzazione/inserimento corrente: "percent" oppure "dollar"
     plafond: float = DEFAULT_PLAFOND
     show_plafond_line: bool = True
-    show_gap_line: bool = True
+    gap_line_mode: str = "gap"  # S: "gap" (scarto da budget), "daily" (consumo di oggi) oppure "off"
     show_gap_history: bool = False
     show_daily_rate: bool = False
     show_gap_chart: bool = False
@@ -98,7 +98,7 @@ class Store:
             mode=raw.get("mode", "percent"),
             plafond=plafond,
             show_plafond_line=raw.get("show_plafond_line", True),
-            show_gap_line=raw.get("show_gap_line", True),
+            gap_line_mode=raw.get("gap_line_mode", "gap" if raw.get("show_gap_line", True) else "off"),
             show_gap_history=raw.get("show_gap_history", False),
             show_daily_rate=raw.get("show_daily_rate", False),
             show_gap_chart=raw.get("show_gap_chart", False),
@@ -114,7 +114,7 @@ class Store:
             "mode": self.mode,
             "plafond": self.plafond,
             "show_plafond_line": self.show_plafond_line,
-            "show_gap_line": self.show_gap_line,
+            "gap_line_mode": self.gap_line_mode,
             "show_gap_history": self.show_gap_history,
             "show_daily_rate": self.show_daily_rate,
             "show_gap_chart": self.show_gap_chart,
@@ -171,7 +171,8 @@ class Store:
         self.save()
 
     def toggle_gap_line(self) -> None:
-        self.show_gap_line = not self.show_gap_line
+        order = ["gap", "daily", "off"]
+        self.gap_line_mode = order[(order.index(self.gap_line_mode) + 1) % len(order)]
         self.save()
 
     def toggle_gap_history(self) -> None:

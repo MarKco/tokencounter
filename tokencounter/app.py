@@ -444,7 +444,7 @@ class TokenCounterApp(App):
         Binding("ctrl+x", "clear_data", "Azzera dati", priority=True),
         Binding("t", "toggle_chart", "Linea/barre", priority=True),
         Binding("p", "toggle_plafond_line", "Linea plafond", priority=True),
-        Binding("s", "toggle_gap_line", "Scarto da budget", priority=True),
+        Binding("s", "toggle_gap_line", "Scarto/consumo oggi", priority=True),
         Binding("g", "toggle_gap_history", "Storico scarto", priority=True),
         Binding("d", "toggle_daily_rate", "Consumo giornaliero", priority=True),
         Binding("v", "toggle_gap_chart", "Grafico scarto", priority=True),
@@ -902,25 +902,41 @@ class TokenCounterApp(App):
         if is_bar:
             draw_budget_ideale()
 
-        if entries and cycle_len and self.store.show_gap_line:
+        if entries and cycle_len and self.store.gap_line_mode != "off":
             last_x, last_y = gap_x, ys[-1]
             budget_at_last_x = target * last_x / cycle_len
             gap = self._gap_pct_dollar(entries[-1], last_x, cycle_len) if budget_at_last_x else None
-            if gap is not None:
+            if gap is not None and self.store.gap_line_mode == "gap":
                 gap_pct, gap_dollar = gap
                 gap_color = "green" if last_y < budget_at_last_x else "red+"
+                line_color = gap_color
+                line_label = "scarto da budget"
+                text = self._fmt_gap(gap_pct, gap_dollar, decimals_pct=1)
+            elif gap is not None:
+                # Consumo di oggi fino ad adesso: valore attuale meno l'ultimo
+                # noto a fine ieri (0 se prima di oggi non c'era niente).
+                yesterday_values = [y for x, y in zip(xs, ys) if x <= int(now_days)]
+                consumed_today = last_y - (yesterday_values[-1] if yesterday_values else 0.0)
+                line_color = (
+                    DAILY_UNDER_PACE_COLOR
+                    if consumed_today <= target / cycle_len
+                    else DAILY_OVER_PACE_COLOR
+                )
+                line_label = "consumo di oggi"
+                text = f"{consumed_today:.{decimals}f}{unit}"
+            if gap is not None:
                 plt.plot(
                     [last_x, last_x],
                     [last_y, budget_at_last_x],
                     marker="braille",
-                    color=gap_color,
-                    label="scarto da budget",
+                    color=line_color,
+                    label=line_label,
                 )
                 plt.text(
-                    self._fmt_gap(gap_pct, gap_dollar, decimals_pct=1),
+                    text,
                     last_x,
                     (last_y + budget_at_last_x) / 2,
-                    color=gap_color,
+                    color=line_color,
                     background="default",
                     alignment="center",
                 )
