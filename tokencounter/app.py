@@ -870,7 +870,9 @@ class TokenCounterApp(App):
                 _predicted, lower, upper = ci
                 plt.plot(
                     [cycle_len, cycle_len],
-                    [clamp_y(lower), clamp_y(upper)],
+                    # Entro l'area visibile (0..ylim): una serie senza nessun
+                    # punto visibile manda in crash plotext.
+                    [max(0.0, min(target * 1.1, lower)), max(0.0, min(target * 1.1, upper))],
                     marker="braille",
                     color="magenta",
                     label="intervallo di confidenza",
